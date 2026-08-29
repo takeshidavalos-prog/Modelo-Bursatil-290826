@@ -548,9 +548,23 @@ if "df_resultados" in st.session_state:
             "VaR %": "{:.2%}",
             "VaR $": "${:,.2f}",
         }
+        def resaltar_rentabilidad(col):
+            # Resalta en azul degradado la columna de rentabilidad, sin depender
+            # de matplotlib (background_gradient de pandas lo requiere y puede
+            # no estar instalado en el entorno de despliegue).
+            vals = col.astype(float)
+            vmin, vmax = vals.min(), vals.max()
+            rango = (vmax - vmin) or 1.0
+            estilos = []
+            for v in vals:
+                intensidad = (v - vmin) / rango  # 0 a 1
+                azul = int(60 + intensidad * (180 - 60))
+                estilos.append(f"background-color: rgba(0, 120, {azul}, {0.15 + 0.45 * intensidad})")
+            return estilos
+
         st.dataframe(
-            df_resultados.style.format(fmt).background_gradient(
-                subset=["Rentabilidad Anualizada"], cmap="Blues"
+            df_resultados.style.format(fmt).apply(
+                resaltar_rentabilidad, subset=["Rentabilidad Anualizada"]
             ),
             use_container_width=True,
             height=(len(df_resultados) + 1) * 38,
